@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarkAI: AI Logo & Brand Toolkit</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3b82f6; /* Blue 500 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Gray 100 */
+        }
+        /* Custom spinner for loading state */
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Custom image container for rounded corners and shadow */
+        #imageContainer {
+            min-height: 256px; /* Ensure space for loading */
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-2xl bg-white shadow-2xl rounded-xl p-6 md:p-10">
+
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-gray-900 mb-2">
+                <span class="text-blue-600">MarkAI</span>: Logo & Brand Toolkit
+            </h1>
+            <p class="text-gray-500">The smart way to generate logos and complete brand identities.</p>
+        </header>
+
+        <!-- Input Section -->
+        <div class="flex flex-col md:flex-row gap-4 mb-6">
+            <input
+                type="text"
+                id="promptInput"
+                class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                placeholder="e.g., A minimalist red and black logo for a coffee shop called 'The Daily Grind'"
+                value="A futuristic, minimalist, vector logo for a blockchain company, flat design, icon of a stylized shield."
+            />
+            <button
+                id="generateButton"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-150 shadow-md flex items-center justify-center disabled:opacity-50"
+                onclick="generateLogo()"
+            >
+                Generate Logo
+            </button>
+        </div>
+
+        <!-- System Message / Info -->
+        <div id="systemMessage" class="mb-6 text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border-l-4 border-blue-400">
+            Tip: Be descriptive! Include style keywords like 'vector art', 'minimalist', 'flat design', or '3D render'.
+        </div>
+
+        <!-- LLM Feature: Brand Generation Button -->
+        <div class="mb-8 flex justify-center">
+            <button
+                id="generateBrandingButton"
+                class="bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-150 shadow-lg flex items-center gap-2 disabled:opacity-50"
+                onclick="generateBranding()"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Generate Brand Name & Tagline
+            </button>
+        </div>
+
+        <!-- Branding Output Section -->
+        <div id="brandingOutput" class="mt-4">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2 hidden" id="brandingHeader">Brand Identity Ideas</h2>
+            <div id="brandingContent" class="bg-white p-0 rounded-xl text-gray-800">
+                <!-- Content will be injected here -->
+            </div>
+            <div id="brandingLoading" class="hidden flex flex-col items-center mt-4">
+                <div class="spinner mb-2"></div>
+                <p class="text-gray-700 font-medium">Generating brand ideas...</p>
+            </div>
+        </div>
+
+        <!-- Image Output Section -->
+        <div class="mt-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Generated Logo</h2>
+            <div id="imageContainer" class="bg-gray-100 p-4 flex items-center justify-center rounded-xl shadow-inner border border-gray-200">
+                <p id="placeholderText" class="text-gray-500">Your generated logo will appear here.</p>
+                <img id="logoImage" src="" alt="Generated Logo" class="hidden max-w-full h-auto rounded-lg shadow-lg" />
+                <div id="loadingIndicator" class="hidden flex flex-col items-center">
+                    <div class="spinner mb-2"></div>
+                    <p class="text-gray-700 font-medium">Generating image... This may take up to 30 seconds.</p>
+                </div>
+            </div>
+            
+            <!-- Message Box (Used for Errors and Success) -->
+            <div id="messageBox" class="hidden mt-4 p-3 rounded-lg text-sm">
+                <!-- Messages go here -->
+            </div>
+
+            <!-- Image Actions -->
+            <div id="imageActions" class="mt-4 hidden flex justify-end gap-3">
+                <button
+                    id="purchaseButton"
+                    class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md text-sm"
+                    onclick="purchaseLogo()"
+                >
+                    Purchase Logo ($0.99)
+                </button>
+                <button
+                    id="downloadButton"
+                    class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md text-sm"
+                    onclick="downloadImage()"
+                >
+                    Download Image
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const IMAGE_API_KEY = "";
+        const TEXT_API_KEY = "";
+        const IMAGE_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${IMAGE_API_KEY}`;
+        const TEXT_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${TEXT_API_KEY}`;
+
+        const promptInput = document.getElementById('promptInput');
+        const generateButton = document.getElementById('generateButton');
+        const generateBrandingButton = document.getElementById('generateBrandingButton');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const brandingLoading = document.getElementById('brandingLoading');
+        const logoImage = document.getElementById('logoImage');
+        const placeholderText = document.getElementById('placeholderText');
+        const messageBox = document.getElementById('messageBox');
+        const imageActions = document.getElementById('imageActions');
+        const imageContainer = document.getElementById('imageContainer');
+        const brandingContent = document.getElementById('brandingContent');
+        const brandingHeader = document.getElementById('brandingHeader');
+
+
+        /**
+         * Clears all non-essential messages (errors, success).
+         */
+        function clearMessages() {
+            messageBox.classList.add('hidden');
+            // Remove all custom background classes to reset to hidden/neutral state
+            messageBox.classList.remove('bg-red-100', 'border-red-400', 'text-red-700', 'bg-green-100', 'border-green-400', 'text-green-700');
+        }
+
+        /**
+         * Displays a message box (can be error or success).
+         * @param {string} message The message content.
+         * @param {string} type 'error' or 'success'.
+         */
+        function showMessage(message, type = 'error') {
+            clearMessages(); // Clear any previous state first
+            messageBox.textContent = message;
+            messageBox.classList.remove('hidden');
+            
+            if (type === 'error') {
+                messageBox.classList.add('bg-red-100', 'border-red-400', 'text-red-700', 'border');
+            } else if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'border-green-400', 'text-green-700', 'border');
+            }
+        }
+
+        /**
+         * Shows the loading state for the Image Generator.
+         */
+        function showImageLoading(isLoading) {
+            generateButton.disabled = isLoading;
+            loadingIndicator.classList.toggle('hidden', !isLoading);
+            promptInput.disabled = isLoading;
+            imageActions.classList.add('hidden');
+            
+            if (isLoading) {
+                logoImage.classList.add('hidden');
+                placeholderText.classList.add('hidden');
+                imageContainer.classList.add('h-64'); // fixed height during loading
+                clearMessages();
+            } else {
+                imageContainer.classList.remove('h-64');
+            }
+        }
+
+        /**
+         * Shows the loading state for the Branding Generator.
+         */
+        function showBrandingLoading(isLoading) {
+            generateBrandingButton.disabled = isLoading;
+            brandingLoading.classList.toggle('hidden', !isLoading);
+            brandingContent.innerHTML = '';
+            brandingHeader.classList.toggle('hidden', isLoading); // Hide header while loading
+            if (isLoading) {
+                clearMessages();
+            }
+        }
+
+        /**
+         * Displays an error message. (Wrapper for showMessage)
+         * @param {string} message The error message to display.
+         */
+        function showError(message) {
+            logoImage.classList.add('hidden');
+            placeholderText.classList.remove('hidden');
+            showMessage(message || "An unknown error occurred.", 'error');
+        }
+
+        /**
+         * Downloads the currently displayed image.
+         */
+        function downloadImage() {
+            const url = logoImage.src;
+            if (url) {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'ai_generated_logo.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+        }
+
+        /**
+         * Simulates a purchase of the logo and then triggers download.
+         */
+        function purchaseLogo() {
+            showMessage("Purchase successful! Your logo download has started. Thank you for your support!", 'success');
+            console.log("Simulating purchase for $0.99.");
+            downloadImage();
+        }
+
+        /**
+         * Calls the Imagen API to generate a logo using exponential backoff retry logic.
+         */
+        async function fetchImageWithRetry(finalPrompt, maxRetries = 5) {
+            const payload = { 
+                instances: { 
+                    prompt: finalPrompt 
+                }, 
+                parameters: { 
+                    "sampleCount": 1,
+                    "aspectRatio": "1:1"
+                } 
+            };
+            
+            const headers = { 'Content-Type': 'application/json' };
+            
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(IMAGE_API_URL, {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.status === 429) {
+                        const delay = Math.pow(2, i) * 1000 + (Math.random() * 1000);
+                        console.log(`Rate limit hit. Retrying in ${Math.round(delay/1000)}s...`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    }
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`API error: ${errorData.error?.message || response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    const base64Data = result?.predictions?.[0]?.bytesBase64Encoded;
+
+                    if (!base64Data) {
+                        throw new Error("Received an empty image response from the model.");
+                    }
+
+                    return `data:image/png;base64,${base64Data}`;
+
+                } catch (error) {
+                    console.error("Fetch attempt failed:", error.message);
+                    if (i === maxRetries - 1) {
+                        throw new Error("Failed to generate image after multiple retries. " + error.message);
+                    }
+                    if (response && response.status !== 429) {
+                        const delay = Math.pow(2, i) * 1000 + (Math.random() * 500);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                }
+            }
+            throw new Error("Exceeded maximum retry attempts.");
+        }
+
+
+        /**
+         * Main function to handle logo generation (Imagen API).
+         */
+        async function generateLogo() {
+            const userPrompt = promptInput.value.trim();
+            if (!userPrompt) {
+                showError("Please enter a prompt to generate a logo.");
+                return;
+            }
+            
+            const finalPrompt = `A professional, aesthetically pleasing, and highly marketable logo design. Style: minimalist, flat design, vector art. Concept: ${userPrompt}.`;
+
+            showImageLoading(true);
+
+            try {
+                const imageUrl = await fetchImageWithRetry(finalPrompt);
+                
+                logoImage.src = imageUrl;
+                logoImage.classList.remove('hidden');
+                placeholderText.classList.add('hidden');
+                imageActions.classList.remove('hidden');
+                
+                clearMessages();
+                
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                showImageLoading(false);
+            }
+        }
+
+        /**
+         * Calls the Gemini API to generate brand names and taglines (LLM Feature).
+         */
+        async function generateBranding() {
+            const userPrompt = promptInput.value.trim();
+            if (!userPrompt) {
+                showError("Please enter a concept in the input box before generating brand ideas.");
+                return;
+            }
+
+            const systemPrompt = "You are a creative branding consultant. Your task is to generate 3 distinct, modern brand names and a corresponding tagline for each based on the user's logo concept. The response MUST be a JSON array of objects.";
+            const userQuery = `Generate brand names and taglines for a logo concept described as: "${userPrompt}"`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "ARRAY",
+                        description: "A list of brand ideas.",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                "name": { "type": "STRING", description: "A catchy brand name." },
+                                "tagline": { "type": "STRING", description: "A compelling one-sentence tagline." }
+                            },
+                            required: ["name", "tagline"]
+                        }
+                    }
+                }
+            };
+            
+            showBrandingLoading(true);
+
+            try {
+                const response = await fetch(TEXT_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`Text API Error: ${errorData.error?.message || response.statusText}`);
+                }
+
+                const result = await response.json();
+                const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!jsonText) {
+                    throw new Error("Could not retrieve structured branding response.");
+                }
+
+                const parsedJson = JSON.parse(jsonText);
+                renderBranding(parsedJson);
+
+            } catch (error) {
+                console.error("Branding generation failed:", error);
+                showMessage(`Branding generation failed: ${error.message}`, 'error');
+            } finally {
+                showBrandingLoading(false);
+            }
+        }
+
+        /**
+         * Renders the branding data into the UI.
+         * @param {Array<Object>} ideas - The array of brand names and taglines.
+         */
+        function renderBranding(ideas) {
+            let html = '';
+            
+            ideas.forEach((item, index) => {
+                html += `
+                    <div class="p-4 mb-3 border-b border-blue-100 last:border-b-0">
+                        <p class="text-xl font-bold text-fuchsia-600 mb-1">${item.name}</p>
+                        <p class="text-gray-600 italic">"${item.tagline}"</p>
+                    </div>
+                `;
+            });
+
+            brandingHeader.classList.remove('hidden');
+            brandingContent.innerHTML = `<div class="bg-blue-50 p-2 rounded-xl border border-blue-200">${html}</div>`;
+        }
+    </script>
+
+</body>
+</html>
